@@ -1,20 +1,58 @@
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import PageHeader from "@/components/PageHeader";
 import SectionCard from "@/components/SectionCard";
 import PrimaryButton from "@/components/PrimaryButton";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Plus, User } from "lucide-react";
-
-const patients = [
-  { id: 1, name: "Sarah Johnson", diagnosis: "ACL Reconstruction Recovery", completion: 72, active: true },
-  { id: 2, name: "Michael Chen", diagnosis: "Frozen Shoulder Rehab", completion: 45, active: true },
-  { id: 3, name: "Emily Davis", diagnosis: "Lower Back Pain Therapy", completion: 90, active: false },
-  { id: 4, name: "James Wilson", diagnosis: "Post-Knee Replacement", completion: 30, active: true },
-];
+import { Plus, User, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
+  const { data: patients = [], isLoading } = useQuery({
+    queryKey: ["doctor-patients", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("patients")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Fetch completion stats per patient
+  const { data: completionStats = {} } = useQuery({
+    queryKey: ["patient-completions-stats", user?.id],
+    queryFn: async () => {
+      const stats: Record<string, number> = {};
+      for (const patient of patients) {
+        const { count: planCount } = await supabase
+          .from("exercise_plans")
+          .select("*", { count: "exact", head: true })
+          .eq("patient_id", patient.id);
+        const { count: completedCount } = await supabase
+          .from("exercise_completions")
+          .select("*", { count: "exact", head: true })
+          .eq("patient_id", patient.id);
+        stats[patient.id] = planCount && planCount > 0
+          ? Math.round(((completedCount || 0) / planCount) * 100)
+          : 0;
+      }
+      return stats;
+    },
+    enabled: patients.length > 0,
+  });
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen bg-background page-transition">
@@ -22,56 +60,78 @@ const DoctorDashboard = () => {
         <PageHeader
           title="Dashboard"
           rightAction={
-            <PrimaryButton
-              fullWidth={false}
-              onClick={() => navigate("/doctor/add-patient")}
-              className="h-10 px-4"
-            >
-              <Plus size={18} className="mr-1" />
-              Add Patient
-            </PrimaryButton>
+            <div className="flex items-center gap-2">
+              <PrimaryButton
+                fullWidth={false}
+                onClick={() => navigate("/doctor/add-patient")}
+                className="h-10 px-4"
+              >
+                <Plus size={18} className="mr-1" />
+                Add Patient
+              </PrimaryButton>
+              <button
+                onClick={handleSignOut}
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
           }
         />
 
-        <div className="space-y-3">
-          {patients.map((patient) => (
-            <SectionCard
-              key={patient.id}
-              hoverable
-              onClick={() => navigate("/doctor/patient-progress")}
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                  <User size={18} className="text-primary" />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium">{patient.name}</p>
-                      <p className="text-[13px] text-muted-foreground">{patient.diagnosis}</p>
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          </div>
+        ) : patients.length === 0 ? (
+          <SectionCard className="text-center py-12">
+            <User size={32} className="mx-auto mb-3 text-muted-foreground" />
+            <p className="text-muted-foreground">No patients yet. Add your first patient!</p>
+          </SectionCard>
+        ) : (
+          <div className="space-y-3">
+            {patients.map((patient) => {
+              const completion = completionStats[patient.id] || 0;
+              return (
+                <SectionCard
+                  key={patient.id}
+                  hoverable
+                  onClick={() => navigate(`/doctor/patient-progress/${patient.id}`)}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                      <User size={18} className="text-primary" />
                     </div>
-                    <Badge
-                      variant={patient.active ? "default" : "secondary"}
-                      className={
-                        patient.active
-                          ? "bg-primary/10 text-primary hover:bg-primary/10"
-                          : "bg-muted text-muted-foreground hover:bg-muted"
-                      }
-                    >
-                      {patient.active ? "Active" : "Inactive"}
-                    </Badge>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-medium">{patient.full_name}</p>
+                          <p className="text-[13px] text-muted-foreground">{patient.diagnosis || "No diagnosis"}</p>
+                        </div>
+                        <Badge
+                          variant={patient.is_active ? "default" : "secondary"}
+                          className={
+                            patient.is_active
+                              ? "bg-primary/10 text-primary hover:bg-primary/10"
+                              : "bg-muted text-muted-foreground hover:bg-muted"
+                          }
+                        >
+                          {patient.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Progress value={completion} className="h-2 flex-1" />
+                        <span className="text-[13px] font-medium text-muted-foreground">
+                          {completion}%
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Progress value={patient.completion} className="h-2 flex-1" />
-                    <span className="text-[13px] font-medium text-muted-foreground">
-                      {patient.completion}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </SectionCard>
-          ))}
-        </div>
+                </SectionCard>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

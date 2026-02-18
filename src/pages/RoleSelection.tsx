@@ -1,15 +1,24 @@
 import { Stethoscope, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import PrimaryButton from "@/components/PrimaryButton";
 import heroImage from "@/assets/hero-physio.jpg";
+import { useEffect } from "react";
 
 const RoleSelection = () => {
   const navigate = useNavigate();
+  const { user, role, loading } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user && role) {
+      navigate(role === "doctor" ? "/doctor/dashboard" : "/patient/home", { replace: true });
+    }
+  }, [user, role, loading, navigate]);
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-background page-transition">
       <div className="app-container flex flex-1 flex-col items-center justify-center gap-8 py-12">
-        {/* Logo area */}
         <div className="flex flex-col items-center gap-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
             <Heart className="text-primary-foreground" size={28} />
@@ -20,7 +29,6 @@ const RoleSelection = () => {
           </div>
         </div>
 
-        {/* Hero image */}
         <div className="w-full overflow-hidden rounded-2xl">
           <img
             src={heroImage}
@@ -29,7 +37,6 @@ const RoleSelection = () => {
           />
         </div>
 
-        {/* Role buttons */}
         <div className="flex w-full flex-col gap-4">
           <PrimaryButton onClick={() => navigate("/login?role=doctor")}>
             <Stethoscope size={20} className="mr-2" />

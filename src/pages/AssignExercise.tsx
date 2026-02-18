@@ -1,22 +1,17 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import PageHeader from "@/components/PageHeader";
 import SectionCard from "@/components/SectionCard";
 import PrimaryButton from "@/components/PrimaryButton";
 import { Input } from "@/components/ui/input";
 import { Plus, Activity } from "lucide-react";
-
-const exerciseLibrary = [
-  { id: 1, name: "Straight Leg Raises" },
-  { id: 2, name: "Wall Squats" },
-  { id: 3, name: "Hamstring Curls" },
-  { id: 4, name: "Calf Stretches" },
-  { id: 5, name: "Quad Sets" },
-  { id: 6, name: "Shoulder Pendulums" },
-];
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface AssignedExercise {
-  id: number;
+  exercise_id: string;
   name: string;
   sets: string;
   reps: string;
@@ -25,16 +20,50 @@ interface AssignedExercise {
 
 const AssignExercise = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { patientId } = useParams();
   const [assigned, setAssigned] = useState<AssignedExercise[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  const addExercise = (ex: { id: number; name: string }) => {
-    if (!assigned.find((a) => a.id === ex.id)) {
-      setAssigned([...assigned, { ...ex, sets: "3", reps: "12", rest: "30" }]);
+  const { data: exercises = [] } = useQuery({
+    queryKey: ["exercises"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("exercises").select("*").order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const addExercise = (ex: { id: string; name: string }) => {
+    if (!assigned.find((a) => a.exercise_id === ex.id)) {
+      setAssigned([...assigned, { exercise_id: ex.id, name: ex.name, sets: "3", reps: "12", rest: "30" }]);
     }
   };
 
-  const updateField = (id: number, field: string, value: string) => {
-    setAssigned(assigned.map((a) => (a.id === id ? { ...a, [field]: value } : a)));
+  const updateField = (exerciseId: string, field: string, value: string) => {
+    setAssigned(assigned.map((a) => (a.exercise_id === exerciseId ? { ...a, [field]: value } : a)));
+  };
+
+  const handleSave = async () => {
+    if (!patientId || assigned.length === 0) return;
+    setSaving(true);
+    const plans = assigned.map((a) => ({
+      patient_id: patientId,
+      exercise_id: a.exercise_id,
+      sets: parseInt(a.sets) || 3,
+      reps: parseInt(a.reps) || 12,
+      rest_seconds: parseInt(a.rest) || 30,
+      assigned_by: user!.id,
+    }));
+    const { error } = await supabase.from("exercise_plans").insert(plans);
+    setSaving(false);
+    if (error) {
+      toast.error("Failed to save plan");
+      console.error(error);
+    } else {
+      toast.success("Exercise plan saved!");
+      navigate("/doctor/dashboard");
+    }
   };
 
   return (
@@ -43,8 +72,8 @@ const AssignExercise = () => {
         <PageHeader title="Assign Exercises" showBack />
 
         <div className="space-y-3">
-          {exerciseLibrary.map((ex) => {
-            const isAdded = assigned.find((a) => a.id === ex.id);
+          {exercises.map((ex) => {
+            const isAdded = assigned.find((a) => a.exercise_id === ex.id);
             return (
               <SectionCard key={ex.id}>
                 <div className="flex items-center justify-between">
@@ -102,8 +131,8 @@ const AssignExercise = () => {
       {assigned.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-card p-4">
           <div className="app-container">
-            <PrimaryButton onClick={() => navigate("/doctor/dashboard")}>
-              Save Plan ({assigned.length} exercises)
+            <PrimaryButton onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : `Save Plan (${assigned.length} exercises)`}
             </PrimaryButton>
           </div>
         </div>

@@ -7,27 +7,34 @@ import FormField from "@/components/FormField";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
 
-const Login = () => {
+const Signup = () => {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signUp } = useAuth();
   const [searchParams] = useSearchParams();
-  const role = searchParams.get("role") || "patient";
+  const role = (searchParams.get("role") as "doctor" | "patient") || "patient";
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
+  const handleSignup = async () => {
+    if (!fullName || !email || !password) {
       toast.error("Please fill in all fields");
       return;
     }
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
     setLoading(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signUp(email, password, fullName, role);
     setLoading(false);
     if (error) {
       toast.error(error.message);
+    } else {
+      toast.success("Account created! Check your email to verify, then sign in.");
+      navigate(`/login?role=${role}`);
     }
-    // Auth state change will handle redirect via App.tsx
   };
 
   return (
@@ -42,13 +49,20 @@ const Login = () => {
             </div>
             <div className="text-center">
               <h1 className="mb-1">
-                {role === "doctor" ? "Doctor Login" : "Patient Login"}
+                {role === "doctor" ? "Doctor Sign Up" : "Patient Sign Up"}
               </h1>
-              <p className="text-muted-foreground">Sign in to your account</p>
+              <p className="text-muted-foreground">Create your account</p>
             </div>
           </div>
 
           <div className="flex flex-col gap-4">
+            <FormField
+              label="Full Name"
+              id="fullName"
+              placeholder="Dr. Jane Smith"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
             <FormField
               label="Email"
               id="email"
@@ -68,14 +82,14 @@ const Login = () => {
           </div>
 
           <div className="flex flex-col gap-3">
-            <PrimaryButton onClick={handleLogin} disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+            <PrimaryButton onClick={handleSignup} disabled={loading}>
+              {loading ? "Creating account..." : "Sign Up"}
             </PrimaryButton>
             <button
-              onClick={() => navigate(`/signup?role=${role}`)}
+              onClick={() => navigate(`/login?role=${role}`)}
               className="text-center text-[13px] text-muted-foreground transition-colors hover:text-foreground"
             >
-              Don't have an account? Sign up
+              Already have an account? Sign in
             </button>
           </div>
         </div>
@@ -84,4 +98,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Signup;

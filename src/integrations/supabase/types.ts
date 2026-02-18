@@ -14,16 +14,250 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      exercise_completions: {
+        Row: {
+          completed_at: string
+          exercise_plan_id: string
+          id: string
+          patient_id: string
+        }
+        Insert: {
+          completed_at?: string
+          exercise_plan_id: string
+          id?: string
+          patient_id: string
+        }
+        Update: {
+          completed_at?: string
+          exercise_plan_id?: string
+          id?: string
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_completions_exercise_plan_id_fkey"
+            columns: ["exercise_plan_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_completions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exercise_plans: {
+        Row: {
+          assigned_by: string
+          created_at: string
+          exercise_id: string
+          id: string
+          patient_id: string
+          reps: number
+          rest_seconds: number
+          sets: number
+        }
+        Insert: {
+          assigned_by: string
+          created_at?: string
+          exercise_id: string
+          id?: string
+          patient_id: string
+          reps?: number
+          rest_seconds?: number
+          sets?: number
+        }
+        Update: {
+          assigned_by?: string
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          patient_id?: string
+          reps?: number
+          rest_seconds?: number
+          sets?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_plans_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_plans_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exercises: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      pain_logs: {
+        Row: {
+          created_at: string
+          id: string
+          level: number
+          notes: string | null
+          patient_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level: number
+          notes?: string | null
+          patient_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: number
+          notes?: string | null
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pain_logs_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          age: number | null
+          created_at: string
+          diagnosis: string | null
+          doctor_id: string
+          full_name: string
+          gender: string | null
+          height_cm: number | null
+          id: string
+          is_active: boolean
+          login_id: string | null
+          updated_at: string
+          user_id: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string
+          diagnosis?: string | null
+          doctor_id: string
+          full_name: string
+          gender?: string | null
+          height_cm?: number | null
+          id?: string
+          is_active?: boolean
+          login_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          age?: number | null
+          created_at?: string
+          diagnosis?: string | null
+          doctor_id?: string
+          full_name?: string
+          gender?: string | null
+          height_cm?: number | null
+          id?: string
+          is_active?: boolean
+          login_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_patient_id_for_user: { Args: { _user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_doctor_of_patient: { Args: { _patient_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "doctor" | "patient"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +384,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["doctor", "patient"],
+    },
   },
 } as const

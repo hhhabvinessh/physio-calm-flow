@@ -1,16 +1,56 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import PageHeader from "@/components/PageHeader";
 import SectionCard from "@/components/SectionCard";
 import PrimaryButton from "@/components/PrimaryButton";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const PainLog = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [painLevel, setPainLevel] = useState([5]);
   const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const { data: patient } = useQuery({
+    queryKey: ["my-patient", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("patients")
+        .select("id")
+        .eq("user_id", user!.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const handleSubmit = async () => {
+    if (!patient) {
+      toast.error("Patient record not found");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.from("pain_logs").insert({
+      patient_id: patient.id,
+      level: painLevel[0],
+      notes: notes || null,
+    });
+    setSaving(false);
+    if (error) {
+      toast.error("Failed to save pain log");
+      console.error(error);
+    } else {
+      toast.success("Pain log saved!");
+      navigate("/patient/home");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background page-transition">
@@ -22,27 +62,15 @@ const PainLog = () => {
             <div className="text-center">
               <p className="text-5xl font-bold text-foreground">{painLevel[0]}</p>
               <p className="mt-1 text-muted-foreground">
-                {painLevel[0] <= 3
-                  ? "Mild discomfort"
-                  : painLevel[0] <= 6
-                  ? "Moderate pain"
-                  : "Severe pain"}
+                {painLevel[0] <= 3 ? "Mild discomfort" : painLevel[0] <= 6 ? "Moderate pain" : "Severe pain"}
               </p>
             </div>
-
             <div className="space-y-2">
               <div className="flex justify-between text-[11px] text-muted-foreground">
                 <span>No pain</span>
                 <span>Worst pain</span>
               </div>
-              <Slider
-                value={painLevel}
-                onValueChange={setPainLevel}
-                max={10}
-                min={0}
-                step={1}
-                className="py-2"
-              />
+              <Slider value={painLevel} onValueChange={setPainLevel} max={10} min={0} step={1} className="py-2" />
             </div>
           </div>
         </SectionCard>
@@ -57,7 +85,9 @@ const PainLog = () => {
           />
         </div>
 
-        <PrimaryButton onClick={() => navigate("/patient/home")}>Submit Log</PrimaryButton>
+        <PrimaryButton onClick={handleSubmit} disabled={saving}>
+          {saving ? "Saving..." : "Submit Log"}
+        </PrimaryButton>
       </div>
     </div>
   );

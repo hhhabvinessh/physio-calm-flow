@@ -100,22 +100,37 @@ export type Database = {
       }
       exercises: {
         Row: {
+          body_part: string | null
+          category: string | null
           created_at: string
           description: string | null
+          difficulty: string | null
           id: string
+          image_url: string | null
           name: string
+          video_url: string | null
         }
         Insert: {
+          body_part?: string | null
+          category?: string | null
           created_at?: string
           description?: string | null
+          difficulty?: string | null
           id?: string
+          image_url?: string | null
           name: string
+          video_url?: string | null
         }
         Update: {
+          body_part?: string | null
+          category?: string | null
           created_at?: string
           description?: string | null
+          difficulty?: string | null
           id?: string
+          image_url?: string | null
           name?: string
+          video_url?: string | null
         }
         Relationships: []
       }

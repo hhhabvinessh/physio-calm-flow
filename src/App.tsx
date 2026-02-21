@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleSelection from "./pages/RoleSelection";
@@ -23,11 +23,32 @@ const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   const { user, role, loading } = useAuth();
+  const location = useLocation();
 
-  // Auto-redirect after login
-  if (!loading && user && role && (window.location.pathname === "/login" || window.location.pathname === "/signup" || window.location.pathname === "/")) {
+  // Show loading spinner while auth state is being determined
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Auto-redirect authenticated users away from public pages
+  const publicPaths = ["/", "/login", "/signup"];
+  if (user && role && publicPaths.includes(location.pathname)) {
     const redirect = role === "doctor" ? "/doctor/dashboard" : "/patient/home";
     return <Navigate to={redirect} replace />;
+  }
+
+  // Authenticated user without a role — block access
+  if (user && !role && !publicPaths.includes(location.pathname)) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background gap-4 p-6 text-center">
+        <h1 className="text-xl font-semibold text-destructive">Access Denied</h1>
+        <p className="text-muted-foreground">Your account does not have a valid role assigned. Please contact support.</p>
+      </div>
+    );
   }
 
   return (

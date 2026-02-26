@@ -8,6 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleSelection from "./pages/RoleSelection";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import SelectRole from "./pages/SelectRole";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import AddPatient from "./pages/AddPatient";
 import AssignExercise from "./pages/AssignExercise";
@@ -35,27 +36,24 @@ const AppRoutes = () => {
   }
 
   // Auto-redirect authenticated users away from public pages
-  const publicPaths = ["/", "/login", "/signup"];
-  if (user && role && publicPaths.includes(location.pathname)) {
+  const publicPaths = ["/", "/login", "/signup", "/select-role"];
+  if (user && role && ["/", "/login", "/signup"].includes(location.pathname)) {
     const redirect = role === "doctor" ? "/doctor/dashboard" : "/patient/home";
     return <Navigate to={redirect} replace />;
   }
 
-  // Authenticated user without a role — block access
+  // Authenticated user without role — send to role selection
   if (user && !role && !publicPaths.includes(location.pathname)) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background gap-4 p-6 text-center">
-        <h1 className="text-xl font-semibold text-destructive">Access Denied</h1>
-        <p className="text-muted-foreground">Your account does not have a valid role assigned. Please contact support.</p>
-      </div>
-    );
+    return <Navigate to="/select-role" replace />;
   }
+
 
   return (
     <Routes>
       <Route path="/" element={<RoleSelection />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/select-role" element={<SelectRole />} />
       <Route path="/doctor/dashboard" element={<ProtectedRoute requiredRole="doctor"><DoctorDashboard /></ProtectedRoute>} />
       <Route path="/doctor/add-patient" element={<ProtectedRoute requiredRole="doctor"><AddPatient /></ProtectedRoute>} />
       <Route path="/doctor/assign-exercise/:patientId" element={<ProtectedRoute requiredRole="doctor"><AssignExercise /></ProtectedRoute>} />

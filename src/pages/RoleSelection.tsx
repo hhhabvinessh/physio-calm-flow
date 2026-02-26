@@ -9,10 +9,17 @@ const RoleSelection = () => {
   const navigate = useNavigate();
   const { user, role, loading } = useAuth();
 
-  // Redirect if already logged in
+  // Redirect if already logged in with a role
   useEffect(() => {
     if (!loading && user && role) {
       navigate(role === "doctor" ? "/doctor/dashboard" : "/patient/home", { replace: true });
+    }
+  }, [user, role, loading, navigate]);
+
+  // If logged in but no role, redirect to role assignment page
+  useEffect(() => {
+    if (!loading && user && !role) {
+      navigate("/select-role", { replace: true });
     }
   }, [user, role, loading, navigate]);
 

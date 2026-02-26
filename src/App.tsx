@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleSelection from "./pages/RoleSelection";
 import Login from "./pages/Login";
@@ -26,7 +26,6 @@ const AppRoutes = () => {
   const { user, role, loading } = useAuth();
   const location = useLocation();
 
-  // Show loading spinner while auth state is being determined
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -35,18 +34,15 @@ const AppRoutes = () => {
     );
   }
 
-  // Auto-redirect authenticated users away from public pages
   const publicPaths = ["/", "/login", "/signup", "/select-role"];
   if (user && role && ["/", "/login", "/signup"].includes(location.pathname)) {
     const redirect = role === "doctor" ? "/doctor/dashboard" : "/patient/home";
     return <Navigate to={redirect} replace />;
   }
 
-  // Authenticated user without role — send to role selection
   if (user && !role && !publicPaths.includes(location.pathname)) {
     return <Navigate to="/select-role" replace />;
   }
-
 
   return (
     <Routes>
@@ -63,7 +59,6 @@ const AppRoutes = () => {
       <Route path="/patient/exercise/:planId" element={<ProtectedRoute requiredRole="patient"><ExerciseDetail /></ProtectedRoute>} />
       <Route path="/patient/pain-log" element={<ProtectedRoute requiredRole="patient"><PainLog /></ProtectedRoute>} />
       <Route path="/patient/completion" element={<ProtectedRoute requiredRole="patient"><CompletionScreen /></ProtectedRoute>} />
-      {/* Keep old routes for backwards compat */}
       <Route path="/doctor/assign-exercise" element={<ProtectedRoute requiredRole="doctor"><AssignExercise /></ProtectedRoute>} />
       <Route path="/doctor/patient-progress" element={<ProtectedRoute requiredRole="doctor"><PatientProgress /></ProtectedRoute>} />
       <Route path="/patient/exercise" element={<ProtectedRoute requiredRole="patient"><ExerciseDetail /></ProtectedRoute>} />
@@ -78,9 +73,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
+        <AppRoutes />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

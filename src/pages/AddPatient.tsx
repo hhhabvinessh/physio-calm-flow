@@ -19,37 +19,41 @@ const AddPatient = () => {
   const [weight, setWeight] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loginId] = useState("PT-" + Math.random().toString(36).substring(2, 8).toUpperCase());
-  const [tempPassword] = useState("temp-" + Math.random().toString(36).substring(2, 8));
 
   const handleSave = async () => {
-    if (!fullName) {
+    if (!fullName.trim()) {
       toast.error("Patient name is required");
       return;
     }
+    if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from("patients")
-      .insert({
-        doctor_id: user!.id,
-        full_name: fullName,
-        age: age ? parseInt(age) : null,
-        gender: gender || null,
-        height_cm: height ? parseFloat(height) : null,
-        weight_kg: weight ? parseFloat(weight) : null,
-        diagnosis: diagnosis || null,
-        login_id: loginId,
-      })
-      .select()
-      .single();
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("patients")
+        .insert({
+          doctor_id: user.id,
+          full_name: fullName.trim(),
+          age: age ? parseInt(age) : null,
+          gender: gender || null,
+          height_cm: height ? parseFloat(height) : null,
+          weight_kg: weight ? parseFloat(weight) : null,
+          diagnosis: diagnosis.trim() || null,
+        })
+        .select()
+        .single();
 
-    if (error) {
-      toast.error("Failed to create patient");
-      console.error(error);
-    } else {
+      if (error) {
+        toast.error("Failed to create patient");
+        console.error(error);
+        return;
+      }
       toast.success("Patient created!");
       navigate(`/doctor/assign-exercise/${data.id}`);
+    } catch (err) {
+      console.error("Add patient error:", err);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,12 +86,6 @@ const AddPatient = () => {
           </div>
 
           <FormField label="Diagnosis" id="diagnosis" placeholder="e.g. ACL Reconstruction" value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} />
-
-          <div className="rounded-2xl border border-border bg-muted/50 p-4 space-y-3">
-            <p className="text-[13px] font-medium text-muted-foreground">Generated Credentials</p>
-            <FormField label="Login ID" id="loginId" value={loginId} onChange={() => {}} />
-            <FormField label="Temporary Password" id="tempPass" value={tempPassword} onChange={() => {}} />
-          </div>
 
           <div className="pt-2">
             <PrimaryButton onClick={handleSave} disabled={loading}>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,33 +11,49 @@ const SelectRole = () => {
   const { user, role, loading, refreshRole } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
-  // If already has role, redirect
-  if (!loading && user && role) {
-    navigate(role === "doctor" ? "/doctor/dashboard" : "/patient/home", { replace: true });
-    return null;
-  }
+  // Redirect if already has role
+  useEffect(() => {
+    if (!loading && user && role) {
+      navigate(role === "doctor" ? "/doctor/dashboard" : "/patient/home", { replace: true });
+    }
+  }, [loading, user, role, navigate]);
 
-  // If not logged in, redirect to home
-  if (!loading && !user) {
-    navigate("/", { replace: true });
-    return null;
-  }
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/", { replace: true });
+    }
+  }, [loading, user, navigate]);
 
   const handleSelectRole = async (selectedRole: "doctor" | "patient") => {
     if (!user) return;
     setSubmitting(true);
-    const { error } = await supabase.from("user_roles").insert({
-      user_id: user.id,
-      role: selectedRole,
-    });
-    if (error) {
-      toast.error("Failed to set role. Please try again.");
+    try {
+      const { error } = await supabase.from("user_roles").insert({
+        user_id: user.id,
+        role: selectedRole,
+      });
+      if (error) {
+        toast.error("Failed to set role. Please try again.");
+        return;
+      }
+      await refreshRole();
+      navigate(selectedRole === "doctor" ? "/doctor/dashboard" : "/patient/home", { replace: true });
+    } catch (err) {
+      console.error("Role selection error:", err);
+      toast.error("An unexpected error occurred. Please try again.");
+    } finally {
       setSubmitting(false);
-      return;
     }
-    await refreshRole();
-    navigate(selectedRole === "doctor" ? "/doctor/dashboard" : "/patient/home", { replace: true });
   };
+
+  if (loading || (user && role)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-background page-transition">

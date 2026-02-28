@@ -34,12 +34,14 @@ const AppRoutes = () => {
     );
   }
 
-  const publicPaths = ["/", "/login", "/signup", "/select-role"];
+  // Logged in with role → redirect away from public pages
   if (user && role && ["/", "/login", "/signup"].includes(location.pathname)) {
     const redirect = role === "doctor" ? "/doctor/dashboard" : "/patient/home";
     return <Navigate to={redirect} replace />;
   }
 
+  // Logged in without role → force role selection
+  const publicPaths = ["/", "/login", "/signup", "/select-role"];
   if (user && !role && !publicPaths.includes(location.pathname)) {
     return <Navigate to="/select-role" replace />;
   }
@@ -59,9 +61,6 @@ const AppRoutes = () => {
       <Route path="/patient/exercise/:planId" element={<ProtectedRoute requiredRole="patient"><ExerciseDetail /></ProtectedRoute>} />
       <Route path="/patient/pain-log" element={<ProtectedRoute requiredRole="patient"><PainLog /></ProtectedRoute>} />
       <Route path="/patient/completion" element={<ProtectedRoute requiredRole="patient"><CompletionScreen /></ProtectedRoute>} />
-      <Route path="/doctor/assign-exercise" element={<ProtectedRoute requiredRole="doctor"><AssignExercise /></ProtectedRoute>} />
-      <Route path="/doctor/patient-progress" element={<ProtectedRoute requiredRole="doctor"><PatientProgress /></ProtectedRoute>} />
-      <Route path="/patient/exercise" element={<ProtectedRoute requiredRole="patient"><ExerciseDetail /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

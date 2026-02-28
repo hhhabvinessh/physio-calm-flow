@@ -45,24 +45,30 @@ const AssignExercise = () => {
   };
 
   const handleSave = async () => {
-    if (!patientId || assigned.length === 0) return;
+    if (!patientId || assigned.length === 0 || !user) return;
     setSaving(true);
-    const plans = assigned.map((a) => ({
-      patient_id: patientId,
-      exercise_id: a.exercise_id,
-      sets: parseInt(a.sets) || 3,
-      reps: parseInt(a.reps) || 12,
-      rest_seconds: parseInt(a.rest) || 30,
-      assigned_by: user!.id,
-    }));
-    const { error } = await supabase.from("exercise_plans").insert(plans);
-    setSaving(false);
-    if (error) {
-      toast.error("Failed to save plan");
-      console.error(error);
-    } else {
+    try {
+      const plans = assigned.map((a) => ({
+        patient_id: patientId,
+        exercise_id: a.exercise_id,
+        sets: parseInt(a.sets) || 3,
+        reps: parseInt(a.reps) || 12,
+        rest_seconds: parseInt(a.rest) || 30,
+        assigned_by: user.id,
+      }));
+      const { error } = await supabase.from("exercise_plans").insert(plans);
+      if (error) {
+        toast.error("Failed to save plan");
+        console.error(error);
+        return;
+      }
       toast.success("Exercise plan saved!");
       navigate("/doctor/dashboard");
+    } catch (err) {
+      console.error("Save plan error:", err);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setSaving(false);
     }
   };
 

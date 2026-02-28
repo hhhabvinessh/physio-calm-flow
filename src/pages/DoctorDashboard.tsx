@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Plus, User, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
@@ -26,32 +27,57 @@ const DoctorDashboard = () => {
     enabled: !!user,
   });
 
-  // Fetch completion stats per patient
-  const { data: completionStats = {} } = useQuery({
-    queryKey: ["patient-completions-stats", user?.id],
+  // Batch fetch completion stats — single query per table instead of N+1
+  const patientIds = patients.map((p) => p.id);
+
+  const { data: planCounts = {} } = useQuery({
+    queryKey: ["plan-counts", patientIds],
     queryFn: async () => {
-      const stats: Record<string, number> = {};
-      for (const patient of patients) {
-        const { count: planCount } = await supabase
-          .from("exercise_plans")
-          .select("*", { count: "exact", head: true })
-          .eq("patient_id", patient.id);
-        const { count: completedCount } = await supabase
-          .from("exercise_completions")
-          .select("*", { count: "exact", head: true })
-          .eq("patient_id", patient.id);
-        stats[patient.id] = planCount && planCount > 0
-          ? Math.round(((completedCount || 0) / planCount) * 100)
-          : 0;
-      }
-      return stats;
+      const { data, error } = await supabase
+        .from("exercise_plans")
+        .select("patient_id")
+        .in("patient_id", patientIds);
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      data.forEach((row) => {
+        counts[row.patient_id] = (counts[row.patient_id] || 0) + 1;
+      });
+      return counts;
     },
-    enabled: patients.length > 0,
+    enabled: patientIds.length > 0,
   });
 
+  const { data: completionCounts = {} } = useQuery({
+    queryKey: ["completion-counts", patientIds],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("exercise_completions")
+        .select("patient_id")
+        .in("patient_id", patientIds);
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      data.forEach((row) => {
+        counts[row.patient_id] = (counts[row.patient_id] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: patientIds.length > 0,
+  });
+
+  const getCompletion = (patientId: string) => {
+    const plans = planCounts[patientId] || 0;
+    const completed = completionCounts[patientId] || 0;
+    return plans > 0 ? Math.round((completed / plans) * 100) : 0;
+  };
+
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
+    try {
+      await signOut();
+      navigate("/");
+    } catch (err) {
+      console.error("Sign out error:", err);
+      toast.error("Failed to sign out");
+    }
   };
 
   return (
@@ -72,6 +98,7 @@ const DoctorDashboard = () => {
               <button
                 onClick={handleSignOut}
                 className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Sign out"
               >
                 <LogOut size={18} />
               </button>
@@ -91,7 +118,7 @@ const DoctorDashboard = () => {
         ) : (
           <div className="space-y-3">
             {patients.map((patient) => {
-              const completion = completionStats[patient.id] || 0;
+              const completion = getCompletion(patient.id);
               return (
                 <SectionCard
                   key={patient.id}

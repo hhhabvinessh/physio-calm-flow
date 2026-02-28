@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import PageHeader from "@/components/PageHeader";
 import SectionCard from "@/components/SectionCard";
 import PrimaryButton from "@/components/PrimaryButton";
-import { Clock, Play, Check } from "lucide-react";
+import { Clock, Play, Pause, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -17,8 +17,14 @@ const ExerciseDetail = () => {
   const queryClient = useQueryClient();
   const [timer, setTimer] = useState(0);
   const [running, setRunning] = useState(false);
-  const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
   const [completing, setCompleting] = useState(false);
+
+  // Timer with proper cleanup
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setTimer((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [running]);
 
   const { data: plan } = useQuery({
     queryKey: ["exercise-plan", planId],
@@ -37,27 +43,20 @@ const ExerciseDetail = () => {
   const { data: patient } = useQuery({
     queryKey: ["my-patient", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("patients")
         .select("id")
         .eq("user_id", user!.id)
         .single();
+      if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
-  const toggleTimer = () => {
-    if (running && intervalId) {
-      clearInterval(intervalId);
-      setIntervalId(null);
-      setRunning(false);
-    } else {
-      const id = setInterval(() => setTimer((t) => t + 1), 1000);
-      setIntervalId(id);
-      setRunning(true);
-    }
-  };
+  const toggleTimer = useCallback(() => {
+    setRunning((r) => !r);
+  }, []);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -68,18 +67,24 @@ const ExerciseDetail = () => {
   const handleComplete = async () => {
     if (!planId || !patient) return;
     setCompleting(true);
-    const { error } = await supabase.from("exercise_completions").insert({
-      exercise_plan_id: planId,
-      patient_id: patient.id,
-    });
-    setCompleting(false);
-    if (error) {
-      toast.error("Failed to mark complete");
-      console.error(error);
-    } else {
-      if (intervalId) clearInterval(intervalId);
+    try {
+      const { error } = await supabase.from("exercise_completions").insert({
+        exercise_plan_id: planId,
+        patient_id: patient.id,
+      });
+      if (error) {
+        toast.error("Failed to mark complete");
+        console.error(error);
+        return;
+      }
+      setRunning(false);
       queryClient.invalidateQueries({ queryKey: ["my-completions-today"] });
       navigate("/patient/completion");
+    } catch (err) {
+      console.error("Completion error:", err);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setCompleting(false);
     }
   };
 
@@ -115,7 +120,7 @@ const ExerciseDetail = () => {
             <p className="font-mono text-4xl font-bold text-foreground">{formatTime(timer)}</p>
             <PrimaryButton fullWidth={false} className="px-8" onClick={toggleTimer}>
               {running ? "Pause" : "Start"}
-              {!running && <Play size={16} className="ml-1" />}
+              {running ? <Pause size={16} className="ml-1" /> : <Play size={16} className="ml-1" />}
             </PrimaryButton>
           </div>
         </SectionCard>

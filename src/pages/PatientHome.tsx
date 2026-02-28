@@ -4,12 +4,19 @@ import SectionCard from "@/components/SectionCard";
 import { Activity, Play, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 17) return "Good Afternoon";
+  return "Good Evening";
+};
 
 const PatientHome = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
-  // Get patient record
   const { data: patient } = useQuery({
     queryKey: ["my-patient", user?.id],
     queryFn: async () => {
@@ -24,7 +31,6 @@ const PatientHome = () => {
     enabled: !!user,
   });
 
-  // Get exercise plans with exercise details
   const { data: plans = [] } = useQuery({
     queryKey: ["my-plans", patient?.id],
     queryFn: async () => {
@@ -38,7 +44,6 @@ const PatientHome = () => {
     enabled: !!patient,
   });
 
-  // Get today's completions
   const { data: completions = [] } = useQuery({
     queryKey: ["my-completions-today", patient?.id],
     queryFn: async () => {
@@ -62,8 +67,13 @@ const PatientHome = () => {
   const displayName = profile?.full_name || patient?.full_name || "Patient";
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
+    try {
+      await signOut();
+      navigate("/");
+    } catch (err) {
+      console.error("Sign out error:", err);
+      toast.error("Failed to sign out");
+    }
   };
 
   return (
@@ -71,12 +81,13 @@ const PatientHome = () => {
       <div className="app-container pb-8">
         <div className="flex items-center justify-between py-6">
           <div>
-            <p className="text-muted-foreground">Good Morning,</p>
+            <p className="text-muted-foreground">{getGreeting()},</p>
             <h1>{displayName.split(" ")[0]} 👋</h1>
           </div>
           <button
             onClick={handleSignOut}
             className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label="Sign out"
           >
             <LogOut size={18} />
           </button>

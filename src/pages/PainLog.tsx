@@ -21,11 +21,12 @@ const PainLog = () => {
   const { data: patient } = useQuery({
     queryKey: ["my-patient", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("patients")
         .select("id")
         .eq("user_id", user!.id)
         .single();
+      if (error) throw error;
       return data;
     },
     enabled: !!user,
@@ -37,18 +38,24 @@ const PainLog = () => {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from("pain_logs").insert({
-      patient_id: patient.id,
-      level: painLevel[0],
-      notes: notes || null,
-    });
-    setSaving(false);
-    if (error) {
-      toast.error("Failed to save pain log");
-      console.error(error);
-    } else {
+    try {
+      const { error } = await supabase.from("pain_logs").insert({
+        patient_id: patient.id,
+        level: painLevel[0],
+        notes: notes.trim() || null,
+      });
+      if (error) {
+        toast.error("Failed to save pain log");
+        console.error(error);
+        return;
+      }
       toast.success("Pain log saved!");
       navigate("/patient/home");
+    } catch (err) {
+      console.error("Pain log error:", err);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setSaving(false);
     }
   };
 

@@ -3,12 +3,14 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: "doctor" | "patient";
+  requiredRole?: "admin" | "doctor" | "patient";
 }
 
+// ✅ ROUTE PROTECTION WITH ROLE-BASED ACCESS CONTROL (RBAC)
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const { user, role, loading } = useAuth();
 
+  // Show loading spinner while checking authentication
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -17,15 +19,26 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     );
   }
 
+  // Not authenticated - redirect to login
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
+  // Role-based access control (server-side validation already done in AuthContext)
   if (requiredRole && role !== requiredRole) {
-    const redirect = role === "doctor" ? "/doctor/dashboard" : "/patient/home";
-    return <Navigate to={redirect} replace />;
+    // User has wrong role - redirect to their dashboard
+    if (role === "admin") {
+      return <Navigate to="/admin-dashboard" replace />;
+    } else if (role === "doctor") {
+      return <Navigate to="/doctor/dashboard" replace />;
+    } else if (role === "patient") {
+      return <Navigate to="/patient/home" replace />;
+    }
+    // Fallback - redirect to login
+    return <Navigate to="/login" replace />;
   }
 
+  // ✅ ALL CHECKS PASSED - RENDER PROTECTED CONTENT
   return <>{children}</>;
 };
 

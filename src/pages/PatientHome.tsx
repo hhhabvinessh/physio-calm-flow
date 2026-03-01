@@ -5,6 +5,15 @@ import { Activity, Play, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
+type PatientPlan = {
+  id: string;
+  sets: number | null;
+  reps: number | null;
+  exercises?: {
+    name?: string | null;
+  } | null;
+};
+
 const PatientHome = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -25,7 +34,7 @@ const PatientHome = () => {
   });
 
   // Get exercise plans with exercise details
-  const { data: plans = [] } = useQuery({
+  const { data: plans = [] } = useQuery<PatientPlan[]>({
     queryKey: ["my-plans", patient?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -33,7 +42,7 @@ const PatientHome = () => {
         .select("*, exercises(name, description)")
         .eq("patient_id", patient!.id);
       if (error) throw error;
-      return data;
+      return (data ?? []) as PatientPlan[];
     },
     enabled: !!patient,
   });
@@ -116,7 +125,7 @@ const PatientHome = () => {
           <div className="space-y-3">
             {plans.map((plan) => {
               const done = completedPlanIds.has(plan.id);
-              const exerciseName = (plan as any).exercises?.name || "Exercise";
+              const exerciseName = plan.exercises?.name || "Exercise";
               return (
                 <SectionCard key={plan.id} hoverable onClick={() => navigate(`/patient/exercise/${plan.id}`)}>
                   <div className="flex items-center justify-between">

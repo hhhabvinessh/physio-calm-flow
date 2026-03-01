@@ -10,6 +10,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import exerciseImage from "@/assets/exercise-shoulder.jpg";
 
+type ExercisePlanWithExercise = {
+  exercises?: {
+    name?: string | null;
+  } | null;
+};
+
 const ExerciseDetail = () => {
   const navigate = useNavigate();
   const { planId } = useParams();
@@ -83,7 +89,7 @@ const ExerciseDetail = () => {
     }
   };
 
-  const exerciseName = (plan as any)?.exercises?.name || "Exercise";
+  const exerciseName = (plan as ExercisePlanWithExercise | undefined)?.exercises?.name || "Exercise";
 
   return (
     <div className="min-h-screen bg-background page-transition">

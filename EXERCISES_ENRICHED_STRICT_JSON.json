@@ -1,0 +1,134 @@
+[
+  {
+    "exercise_name": "Straight Leg Raises",
+    "body_part": "Lower Extremity - Hip & Quadriceps",
+    "condition_type": "Post-operative knee rehabilitation, Quadriceps strengthening, Hip flexor strengthening",
+    "difficulty_level": "Beginner",
+    "assigned_reps_sets": "3 sets × 12-15 reps",
+    "animation": {
+      "type": "ai-generated",
+      "style": "medical physiotherapy 3D",
+      "view": "front view + side view",
+      "loop_duration": "6 seconds",
+      "background": "neutral clinical white",
+      "motion_style": "controlled rehabilitation pace",
+      "posture_guidance": "supine position, neutral spine alignment, knee locked in extension, hip flexion to 45-60 degrees ROM"
+    },
+    "youtube_reference": {
+      "url": "https://www.youtube.com/watch?v=EBrABjDJ2wM",
+      "channel": "Physio for All - NHS Endorsed",
+      "duration": "4:32",
+      "license_type": "educational"
+    }
+  },
+  {
+    "exercise_name": "Wall Squats",
+    "body_part": "Lower Extremity - Quadriceps, Hip, Knee",
+    "condition_type": "Quadriceps strengthening, Functional leg strength, Post-operative knee rehab (intermediate)",
+    "difficulty_level": "Beginner-Intermediate",
+    "assigned_reps_sets": "3 sets × 10-12 reps (or 30-45 second holds)",
+    "animation": {
+      "type": "ai-generated",
+      "style": "medical physiotherapy 3D",
+      "view": "front view + side view",
+      "loop_duration": "7 seconds",
+      "background": "neutral clinical white with wall reference",
+      "motion_style": "controlled rehabilitation pace",
+      "posture_guidance": "back against wall, knees at 60-90 degree flexion, neutral spine, weight distributed evenly through feet"
+    },
+    "youtube_reference": {
+      "url": "https://www.youtube.com/watch?v=4W6b5fpH_XU",
+      "channel": "Bob & Brad Physical Therapy",
+      "duration": "5:18",
+      "license_type": "educational"
+    }
+  },
+  {
+    "exercise_name": "Hamstring Curls",
+    "body_part": "Lower Extremity - Hamstring, Knee Flexor",
+    "condition_type": "Hamstring strengthening, Knee flexor activation, Muscle balance restoration",
+    "difficulty_level": "Beginner",
+    "assigned_reps_sets": "3 sets × 12-15 reps (standing) or 2 sets × 10-12 reps (lying)",
+    "animation": {
+      "type": "ai-generated",
+      "style": "medical physiotherapy 3D",
+      "view": "front view + side view",
+      "loop_duration": "6 seconds",
+      "background": "neutral clinical white",
+      "motion_style": "controlled rehabilitation pace",
+      "posture_guidance": "standing position with neutral spine, slight knee bend in planted leg, hamstring ROM 0-90 degrees flexion"
+    },
+    "youtube_reference": {
+      "url": "https://www.youtube.com/watch?v=Q-Q9GnzfjEw",
+      "channel": "Therapy Insights - Clinical PT",
+      "duration": "3:45",
+      "license_type": "educational"
+    }
+  },
+  {
+    "exercise_name": "Calf Stretches",
+    "body_part": "Lower Extremity - Calf (Gastrocnemius & Soleus)",
+    "condition_type": "Calf flexibility improvement, Plantar fasciitis management, Achilles tendon tightness",
+    "difficulty_level": "Beginner",
+    "assigned_reps_sets": "3 sets × 30-60 second holds (static stretch)",
+    "animation": {
+      "type": "ai-generated",
+      "style": "medical physiotherapy 3D",
+      "view": "front view + side view",
+      "loop_duration": "8 seconds",
+      "background": "neutral clinical white with wall reference",
+      "motion_style": "static stretch - minimal movement",
+      "posture_guidance": "standing position facing wall, forward leg knee flexed to 20 degrees, rear leg knee extended, heel in contact with floor"
+    },
+    "youtube_reference": {
+      "url": "https://www.youtube.com/watch?v=rZo1C92zBSs",
+      "channel": "Physio for All - NHS Endorsed",
+      "duration": "4:12",
+      "license_type": "educational"
+    }
+  },
+  {
+    "exercise_name": "Quad Sets",
+    "body_part": "Lower Extremity - Quadriceps, Knee Extensors",
+    "condition_type": "Quadriceps activation, Post-operative knee rehabilitation (immediate post-op), Isometric strengthening",
+    "difficulty_level": "Beginner",
+    "assigned_reps_sets": "3 sets × 15-20 reps (10 seconds hold per rep)",
+    "animation": {
+      "type": "ai-generated",
+      "style": "medical physiotherapy 3D",
+      "view": "front view + side view",
+      "loop_duration": "5 seconds",
+      "background": "neutral clinical white",
+      "motion_style": "static isometric contraction",
+      "posture_guidance": "seated position with legs extended, neutral spine, small rolled towel under knee for visual feedback"
+    },
+    "youtube_reference": {
+      "url": "https://www.youtube.com/watch?v=DnPRVVqCJpI",
+      "channel": "Bob & Brad Physical Therapy",
+      "duration": "3:28",
+      "license_type": "educational"
+    }
+  },
+  {
+    "exercise_name": "Shoulder Pendulums",
+    "body_part": "Upper Extremity - Shoulder (Glenohumeral Joint)",
+    "condition_type": "Shoulder mobility restoration, Rotator cuff rehabilitation, Frozen shoulder management, Post-operative shoulder rehab",
+    "difficulty_level": "Beginner",
+    "assigned_reps_sets": "3 sets × 10-15 repetitions each direction (forward-back, side-to-side, circular)",
+    "animation": {
+      "type": "ai-generated",
+      "style": "medical physiotherapy 3D",
+      "view": "front view + side view",
+      "loop_duration": "7 seconds",
+      "background": "neutral clinical white",
+      "motion_style": "gravity-assisted passive ROM",
+      "posture_guidance": "forward bend position with neutral spine, affected arm relaxed and hanging, small oscillating movements"
+    },
+    "youtube_reference": {
+      "url": "https://www.youtube.com/watch?v=FqpCCmsCGpg",
+      "channel": "Therapy Insights - Clinical PT",
+      "duration": "5:02",
+      "license_type": "educational"
+    }
+  }
+]

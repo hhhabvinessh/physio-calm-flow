@@ -10,6 +10,8 @@ interface FormFieldProps {
   placeholder?: string;
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
+  maxLength?: number;
   className?: string;
 }
 
@@ -21,6 +23,8 @@ const FormField = ({
   placeholder,
   value,
   onChange,
+  disabled = false,
+  maxLength,
   className,
 }: FormFieldProps) => {
   return (
@@ -35,7 +39,9 @@ const FormField = ({
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          className="h-12 rounded-xl border-border bg-card text-[15px] focus-visible:ring-primary"
+          disabled={disabled}
+          maxLength={maxLength}
+          className="h-12 rounded-xl border-border bg-card text-[15px] focus-visible:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
         />
       )}
     </div>

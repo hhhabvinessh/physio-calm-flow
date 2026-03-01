@@ -1,15 +1,24 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
-import { Session, User } from "@supabase/supabase-js";
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type AppRole = "doctor" | "patient" | null;
+type AppRole = "admin" | "doctor" | "patient" | null;
+
+interface Profile {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  role: AppRole;
+}
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   role: AppRole;
+  profile: Profile | null;
   loading: boolean;
-  refreshRole: () => Promise<void>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -19,95 +28,121 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchRole = useCallback(async (userId: string) => {
+  const fetchProfile = async (userId: string) => {
     try {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, name, phone, role")
+        .eq("id", userId)
         .single();
-      setRole((data?.role as AppRole) ?? null);
-    } catch {
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        setProfile(null);
+        setRole(null);
+        return;
+      }
+
+      const userRole = (data?.role as AppRole) ?? null;
+      setProfile({
+        id: data.id,
+        name: data.name ?? null,
+        phone: data.phone ?? null,
+        role: userRole,
+      });
+      setRole(userRole);
+    } catch (err) {
+      console.error("Fetch profile error:", err);
+      setProfile(null);
       setRole(null);
     }
-  }, []);
+  };
 
+  // Initialize auth state on mount
   useEffect(() => {
-    let initialised = false;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      const authUser = session?.user ?? null;
+      setUser(authUser);
 
-    // Set up auth listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          // Defer to avoid Supabase lock contention
-          setTimeout(() => fetchRole(session.user.id), 0);
-        } else {
-          setRole(null);
-        }
-        initialised = true;
-        setLoading(false);
+      if (authUser) {
+        await fetchProfile(authUser.id);
+      } else {
+        setProfile(null);
+        setRole(null);
       }
-    );
 
-    // Then check existing session with error handling
-    supabase.auth.getSession()
+      setLoading(false);
+    });
+
+    supabase.auth
+      .getSession()
       .then(({ data: { session } }) => {
-        // Only update if onAuthStateChange hasn't fired yet
-        if (!initialised) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          if (session?.user) {
-            fetchRole(session.user.id);
-          }
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        // Session fetch failed (e.g. corrupt token) — clear state and stop loading
-        if (!initialised) {
-          setSession(null);
-          setUser(null);
+        setSession(session);
+        const authUser = session?.user ?? null;
+        setUser(authUser);
+
+        if (authUser) {
+          fetchProfile(authUser.id);
+        } else {
+          setProfile(null);
           setRole(null);
-          setLoading(false);
         }
+
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error initializing session:", err);
+        setLoading(false);
       });
 
-    // Safety timeout: if nothing resolves in 5s, stop loading anyway
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.warn("Auth initialisation timed out — clearing session");
-        setSession(null);
-        setUser(null);
-        setRole(null);
-        setLoading(false);
-        // Clear potentially corrupt tokens
-        supabase.auth.signOut().catch(() => {});
-      }
-    }, 5000);
-
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(timeout);
-    };
-  }, [fetchRole]);
-
-  const refreshRole = useCallback(async () => {
-    if (user) await fetchRole(user.id);
-  }, [user, fetchRole]);
-
-  const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setRole(null);
+    return () => subscription.unsubscribe();
   }, []);
 
+  const signInWithGoogle = async (): Promise<{ error: Error | null }> => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        return { error: error as Error };
+      }
+
+      return { error: null };
+    } catch (err) {
+      return { error: err as Error };
+    }
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setRole(null);
+    setProfile(null);
+    setUser(null);
+    setSession(null);
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, role, loading, refreshRole, signOut }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        user,
+        role,
+        profile,
+        loading,
+        signInWithGoogle,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
